@@ -94,58 +94,68 @@ _Loftwahnoid_ is a brick-breaking game inspired by Arkanoid/DX Ball, playable on
 |                  | Mobile: Tap screen launches ball                              |
 |                  | Game begins immediately after launch                          |
 
-| **Control Schemes** | |
-| Desktop Keyboard | Left/Right Arrow keys: Move paddle left/right |
-| | Space: Launch ball (first time only) |
-| | P: Pause game |
-| | Music controls: As defined in Section 2.2.2 |
-| Desktop Mouse | Mouse movement: Controls paddle position |
-| | Left-click: Launch ball (first time only) |
-| | Click on pause icon: Pause game |
-| Mobile Touch | Drag finger left/right: Move paddle |
-| | Tap: Launch ball (first time only) |
-| | Tap pause icon: Pause game |
-| | Tap music icon: Expand music controls |
+| Requirement          | Description                                        |
+| -------------------- | -------------------------------------------------- |
+| **Control Schemes**  |                                                    |
+| Desktop Keyboard     | Left/Right Arrow keys: Move paddle left/right      |
+|                      | Space: Launch ball (first time only)               |
+|                      | P: Pause game                                      |
+|                      | Music controls: As defined in Section 2.2.2        |
+| Desktop Mouse        | Mouse movement: Controls paddle position           |
+|                      | Left-click: Launch ball (first time only)          |
+|                      | Click on pause icon: Pause game                    |
+| Mobile Touch         | Drag finger left/right: Move paddle                |
+|                      | Tap: Launch ball (first time only)                 |
+|                      | Tap pause icon: Pause game                         |
+|                      | Tap music icon: Expand music controls              |
 
-| **Paddle Properties** | |
-| Visual Design | Must visually match paddle.png if available |
-| | Fallback to rectangular shape with gradient if image unavailable |
-| Initial State | Starts at size stage 3 (medium) |
-| Size Range | Can grow to stage 5 (maximum) or shrink to stage 1 (minimum) via power-ups |
-| | Each size stage increases/decreases width by approximately 20% |
-| Movement Constraints | Cannot move beyond screen boundaries |
-| | Paddle movement speed must be responsive but not too sensitive |
-| | Consistent movement speed across different devices |
+| Requirement          | Description                                                                 |
+| -------------------- | --------------------------------------------------------------------------- |
+| **Paddle Properties**|                                                                             |
+| Visual Design        | Must visually match paddle.png if available                                 |
+|                      | Fallback to rectangular shape with gradient if image unavailable            |
+| Initial State        | Starts at size stage 3 (medium)                                             |
+| Size Range           | Can grow to stage 5 (maximum) or shrink to stage 1 (minimum) via power-ups  |
+|                      | Each size stage increases/decreases width by approximately 20%              |
+| Movement Constraints | Cannot move beyond screen boundaries                                        |
+|                      | Paddle movement speed must be responsive but not too sensitive              |
+|                      | Consistent movement speed across different devices                          |
 
-| **Ball Behavior** | |
-| Visual Design | Must visually match ball.png if available |
-| | Fallback to circular shape if image unavailable |
-| Collision Physics | Bounces off paddle, bricks, top wall, and side walls |
-| | Angle of reflection from paddle depends on where ball hits paddle |
-| | Center hit: vertical reflection; edge hit: angled reflection |
-| Initial Speed | Moderate speed allowing new players to react comfortably |
-| Speed Progression | Gradually increases speed at fixed intervals (e.g., every 30 seconds) |
-| | Each speed increase limited to 5-10% maximum |
-| Speed Cap | Maximum speed capped at a playable level |
-| | Players should always have reasonable reaction time |
-| Failure Condition | Ball passing below paddle results in life loss |
-| | Brief animation/sound when ball is lost |
-| | Paddle+ball reset to center position after life loss |
+| Requirement       | Description                                                             |
+| ----------------- | ----------------------------------------------------------------------- |
+| **Ball Behavior** |                                                                         |
+| Visual Design     | Must visually match ball.png if available                               |
+|                   | Fallback to circular shape if image unavailable                         |
+| Collision Physics | Bounces off paddle, bricks, top wall, and side walls                    |
+|                   | Angle of reflection from paddle depends on where ball hits paddle        |
+|                   | Center hit: vertical reflection; edge hit: angled reflection            |
+| Initial Speed     | Moderate speed allowing new players to react comfortably                |
+| Speed Progression | Gradually increases speed at fixed intervals (e.g., every 30 seconds)   |
+|                   | Each speed increase limited to 5-10% maximum                            |
+| Speed Cap         | Maximum speed capped at a playable level                                |
+|                   | Players should always have reasonable reaction time                     |
+| Failure Condition | Ball passing below paddle results in life loss                          |
+|                   | Brief animation/sound when ball is lost                                 |
+|                   | Paddle+ball reset to center position after life loss                    |
 
-| **Lives System** | |
-| Starting Lives | Player begins with 3 lives |
-| Life Gain | Additional lives obtainable via power-ups |
-| Life Loss | Occurs when ball passes below paddle |
-| Display | Hearts or numeric "Lives: X" in top-left corner |
-| | Visual effect when gaining/losing a life |
+| Requirement     | Description                                     |
+| --------------- | ----------------------------------------------- |
+| **Lives System**|                                                 |
+| Starting Lives  | Player begins with 3 lives                      |
+| Life Gain       | Additional lives obtainable via power-ups       |
+| Life Loss       | Occurs when ball passes below paddle            |
+| Display         | Hearts or numeric "Lives: X" in top-left corner |
+|                 | Visual effect when gaining/losing a life        |
 
-| **Scoring System** | |
-| Point Values | Standard brick: 10 points |
-| | Tough brick: 20 points (full destruction) |
-| | Special/power-up bricks: 25+ points |
-| Display | Current score shown prominently in top-right corner |
-| | Brief animation when points are added |
-| Score Persistence | High score saved between sessions |
+| Requirement       | Description                                        |
+| ----------------- | -------------------------------------------------- |
+| **Scoring System**|                                                    |
+| Point Values      | Standard brick: 10 points                          |
+|                   | Tough brick: 20 points (full destruction)          |
+|                   | Special/power-up bricks: 25+ points                |
+| Display           | Current score shown prominently in top-right corner|
+|                   | Brief animation when points are added              |
+| Score Persistence | High score saved between sessions                  |
 
 ### 2.4 Brick Types
 
