@@ -23,71 +23,54 @@ export class LevelGenerator {
     }
     
     generate(): Brick[] {
-        // Clear any existing bricks
-        this.bricks = [];
+        console.log(`Generating level ${this.config.level} with ${this.config.columns}x${this.config.rows} grid`);
         
-        // Calculate brick positions based on config
-        const { columns, rows, brickWidth, brickHeight, padding, offsetTop, offsetLeft } = this.config;
+        const bricks: Brick[] = [];
+        const brickWidth = this.config.brickWidth;
+        const brickHeight = this.config.brickHeight;
         
-        // Calculate difficulty factors based on level
-        const difficulty = Math.min(this.config.level / 10, 1); // Cap at 1 (max difficulty)
+        // Calculate grid start position
+        const startX = (this.config.width - (this.config.columns * (brickWidth + this.config.brickPadding))) / 2 + brickWidth / 2;
+        const startY = this.config.topMargin + brickHeight / 2;
         
-        // Calculate brick densities based on difficulty
-        const brickDensity = 0.6 + (difficulty * 0.3); // 60% to 90% density as difficulty increases
-        const toughBrickChance = Math.min(0.1 + (difficulty * 0.3), 0.4); // 10% to 40% chance for tough bricks
-        const indestructibleBrickChance = Math.min(0.05 + (difficulty * 0.15), 0.2); // 5% to 20% chance for indestructible
-        
-        // Track available spaces for valid path
-        const grid: (boolean | undefined)[][] = [];
-        for (let row = 0; row < rows; row++) {
-            grid[row] = [];
-            for (let col = 0; col < columns; col++) {
-                grid[row][col] = undefined; // undefined = not yet decided
-            }
-        }
-        
-        // Ensure at least one valid path through the level
-        this.createValidPath(grid, columns, rows);
-        
-        // Fill the rest of the grid based on density
-        this.fillRemainingGrid(grid, columns, rows, brickDensity, toughBrickChance, indestructibleBrickChance);
-        
-        // Create actual brick objects based on the grid
-        for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < columns; col++) {
-                if (grid[row][col] === true) { // true = has brick
+        // Generate brick layout
+        for (let row = 0; row < this.config.rows; row++) {
+            for (let col = 0; col < this.config.columns; col++) {
+                try {
                     // Calculate position
-                    const x = offsetLeft + (col * (brickWidth + padding)) + (brickWidth / 2);
-                    const y = offsetTop + (row * (brickHeight + padding)) + (brickHeight / 2);
+                    const x = startX + col * (brickWidth + this.config.brickPadding);
+                    const y = startY + row * (brickHeight + this.config.brickPadding);
                     
-                    // Determine brick type based on chances
-                    let brickType: BrickType;
-                    const typeRoll = Math.random();
-                    
-                    if (typeRoll < indestructibleBrickChance) {
-                        brickType = BrickType.Indestructible;
-                    } else if (typeRoll < indestructibleBrickChance + toughBrickChance) {
-                        brickType = BrickType.Tough;
-                    } else {
-                        brickType = BrickType.Standard;
+                    // Determine if we should place a brick here (based on level pattern)
+                    if (this.shouldPlaceBrick(row, col)) {
+                        // Determine brick type based on level
+                        const type = this.getBrickType(row, col);
+                        
+                        // Create the brick
+                        const brick = new Brick({
+                            scene: this.scene,
+                            x,
+                            y,
+                            type
+                        });
+                        
+                        // Make sure the brick was created successfully before adding it
+                        if (brick) {
+                            bricks.push(brick);
+                        }
                     }
-                    
-                    // Create the brick
-                    const brick = new Brick({
-                        scene: this.scene,
-                        x,
-                        y,
-                        type: brickType,
-                        width: brickWidth,
-                        height: brickHeight
-                    });
-                    
-                    this.bricks.push(brick);
+                } catch (error) {
+                    console.error(`Failed to create brick at row ${row}, col ${col}:`, error);
+                    // Continue with the next brick
                 }
             }
         }
         
-        return this.bricks;
+        // Ensure there's a playable path through the level
+        this.ensurePlayablePath(bricks);
+        
+        console.log(`Ensured playable path through level`);
+        return bricks;
     }
     
     private createValidPath(grid: (boolean | undefined)[][], columns: number, rows: number): void {
@@ -130,6 +113,77 @@ export class LevelGenerator {
                 }
             }
         }
+    }
+    
+    private ensurePlayablePath(bricks: Brick[]): void {
+        const rows = Math.ceil(bricks.length / this.config.columns);
+        if (rows === 0) return;
+        
+        const cols = this.config.columns;
+        
+        // Create a guaranteed path through the level
+        // Option 1: Clear a central column
+        const middleCol = Math.floor(cols / 2);
+        
+        for (let row = 0; row < rows; row++) {
+            // Randomly decide whether to clear this brick (70% chance)
+            if (Math.random() < 0.7 && bricks[row * cols + middleCol]) {
+                // Get a reference to the brick before destroying it
+                const brick = bricks[row * cols + middleCol];
+                
+                // Only remove if it exists and is not already destroyed
+                if (brick && brick.active) {
+                    // For standard and tough bricks, we can destroy them
+                    // For indestructible, we can either skip or replace with a tough brick
+                    if (brick.getData('type') === BrickType.Indestructible) {
+                        // Replace indestructible with tough or standard
+                        brick.destroy();
+                        
+                        // Create a new standard brick
+                        const newBrick = new Brick({
+                            scene: this.scene,
+                            x: brick.x,
+                            y: brick.y,
+                            type: BrickType.Standard,
+                            width: brick.width,
+                            height: brick.height
+                        });
+                        
+                        // Update our reference
+                        bricks[row * cols + middleCol] = newBrick;
+                    } else {
+                        // For non-indestructible bricks, just destroy
+                        brick.destroy();
+                        bricks[row * cols + middleCol] = null;
+                    }
+                }
+            }
+        }
+        
+        // Option 2: Also ensure some gaps in each row
+        for (let row = 0; row < rows; row++) {
+            // Ensure at least one gap in each row (30% of columns)
+            let gapsCreated = 0;
+            const gapsNeeded = Math.ceil(cols * 0.3);
+            
+            while (gapsCreated < gapsNeeded) {
+                const randomCol = Math.floor(Math.random() * cols);
+                
+                // Don't create gaps in our main path column
+                if (randomCol !== middleCol && bricks[row * cols + randomCol]) {
+                    const brick = bricks[row * cols + randomCol];
+                    
+                    // Only remove if it exists and is not already destroyed
+                    if (brick && brick.active) {
+                        brick.destroy();
+                        bricks[row * cols + randomCol] = null;
+                        gapsCreated++;
+                    }
+                }
+            }
+        }
+        
+        console.log("Ensured playable path through level");
     }
     
     static getDefaultConfig(level: number, gameWidth: number, gameHeight: number): LevelConfig {

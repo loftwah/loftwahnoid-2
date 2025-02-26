@@ -80,8 +80,15 @@ export class Game extends Scene
             bricksLeft: 0
         };
         
-        // Set up physics world
-        this.physics.world.setBounds(0, 0, this.sys.game.canvas.width, this.sys.game.canvas.height);
+        // Set up physics world - check that physics is available first
+        if (this.physics && this.physics.world) {
+            this.physics.world.setBounds(0, 0, this.sys.game.canvas.width, this.sys.game.canvas.height);
+        } else {
+            console.error('Physics system is not available!');
+            // Create a minimal fallback - use the scene dimensions
+            const gameWidth = this.sys.game.canvas.width || 1024;
+            const gameHeight = this.sys.game.canvas.height || 768;
+        }
         
         // Set up background
         this.setupBackground();
@@ -186,24 +193,57 @@ export class Game extends Scene
     }
 
     private createGameObjects() {
-        // Create paddle
+        const gameWidth = this.sys.game.canvas.width;
+        const gameHeight = this.sys.game.canvas.height;
+        
+        // Create paddle - position relative to screen size
         try {
-            this.paddle = this.physics.add.image(512, 700, 'paddle');
-            this.paddle.setCollideWorldBounds(true);
-            this.paddle.setImmovable(true);
-            this.paddle.setSize(this.paddleSizesWidth[this.currentPaddleSizeStage], 24);
+            if (this.physics) {
+                this.paddle = this.physics.add.image(
+                    gameWidth / 2,
+                    gameHeight - 60,
+                    'paddle'
+                );
+                this.paddle.setCollideWorldBounds(true);
+                this.paddle.setImmovable(true);
+                this.paddle.setSize(this.paddleSizesWidth[this.currentPaddleSizeStage], 24);
+            } else {
+                // Fallback if physics isn't available
+                this.paddle = this.add.image(
+                    gameWidth / 2,
+                    gameHeight - 60,
+                    'paddle'
+                ) as any;
+                
+                // Add a visual rectangle for the paddle as fallback
+                const paddleGraphic = this.add.rectangle(
+                    gameWidth / 2, 
+                    gameHeight - 60, 
+                    this.paddleSizesWidth[this.currentPaddleSizeStage], 
+                    20, 
+                    0x3399ff
+                );
+                paddleGraphic.setStrokeStyle(2, 0xffffff);
+                
+                // Store the graphic reference
+                this.paddle.setData('fallbackGraphic', paddleGraphic);
+            }
         } catch (error) {
             console.error('Failed to create paddle:', error);
             // Create fallback paddle
-            this.paddle = this.physics.add.image(512, 700, '');
+            this.paddle = this.add.image(
+                gameWidth / 2,
+                gameHeight - 60,
+                ''
+            ) as any;
             this.paddle.setDisplaySize(this.paddleSizesWidth[this.currentPaddleSizeStage], 20);
-            this.paddle.setCollideWorldBounds(true);
-            this.paddle.setImmovable(true);
             
             // Add a visual rectangle for the paddle
             const paddleGraphic = this.add.rectangle(
-                512, 700, 
-                this.paddleSizesWidth[this.currentPaddleSizeStage], 20, 
+                gameWidth / 2, 
+                gameHeight - 60, 
+                this.paddleSizesWidth[this.currentPaddleSizeStage], 
+                20, 
                 0x3399ff
             );
             paddleGraphic.setStrokeStyle(2, 0xffffff);
@@ -212,32 +252,68 @@ export class Game extends Scene
             this.paddle.setData('fallbackGraphic', paddleGraphic);
         }
         
-        // Create ball
+        // Create ball - similar safety checks
         try {
-            this.ball = this.physics.add.image(512, 680, 'ball');
-            this.ball.setCollideWorldBounds(true);
-            this.ball.setBounce(1);
-            this.ball.setCircle(8);
+            if (this.physics) {
+                this.ball = this.physics.add.image(
+                    this.paddle.x,
+                    this.paddle.y - 20,
+                    'ball'
+                );
+             
+                this.ball.setBounce(1);
+                this.ball.setCircle(8);
+            } else {
+                // Fallback when physics isn't available
+                this.ball = this.add.image(
+                    this.paddle.x,
+                    this.paddle.y - 20,
+                    'ball'
+                ) as any;
+                
+                // Add a visual circle for the ball
+                const ballGraphic = this.add.circle(
+                    this.paddle.x,
+                    this.paddle.y - 20,
+                    8, 
+                    0xffffff
+                );
+                
+                // Store the graphic reference
+                this.ball.setData('fallbackGraphic', ballGraphic);
+            }
         } catch (error) {
             console.error('Failed to create ball:', error);
             // Create fallback ball
-            this.ball = this.physics.add.image(512, 680, '');
-            this.ball.setDisplaySize(16, 16);
-            this.ball.setCollideWorldBounds(true);
-            this.ball.setBounce(1);
-            this.ball.setCircle(8);
+            this.ball = this.add.image(
+                this.paddle.x,
+                this.paddle.y - 20,
+                ''
+            ) as any;
             
             // Add a visual circle for the ball
-            const ballGraphic = this.add.circle(512, 680, 8, 0xffffff);
+            const ballGraphic = this.add.circle(
+                this.paddle.x,
+                this.paddle.y - 20,
+                8, 
+                0xffffff
+            );
             
             // Store the graphic reference
             this.ball.setData('fallbackGraphic', ballGraphic);
         }
         
-        // Create physics groups
-        this.brickGroup = this.physics.add.staticGroup();
-        this.powerUpGroup = this.physics.add.group();
-        this.projectileGroup = this.physics.add.group();
+        // Create physics groups with safety checks
+        if (this.physics) {
+            this.brickGroup = this.physics.add.staticGroup();
+            this.powerUpGroup = this.physics.add.group();
+            this.projectileGroup = this.physics.add.group();
+        } else {
+            // Create dummy groups as fallback
+            this.brickGroup = { add: () => {} } as any;
+            this.powerUpGroup = { add: () => {} } as any;
+            this.projectileGroup = { add: () => {} } as any;
+        }
     }
 
     private createUI() {
@@ -314,55 +390,145 @@ export class Game extends Scene
     }
 
     private setupInput() {
-        // Set up keyboard input
-        this.cursors = this.input.keyboard!.createCursorKeys();
-        this.keyP = this.input.keyboard!.addKey(Input.Keyboard.KeyCodes.P);
-        this.keyM = this.input.keyboard!.addKey(Input.Keyboard.KeyCodes.M);
-        this.keyN = this.input.keyboard!.addKey(Input.Keyboard.KeyCodes.N);
+        // Keyboard input
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.keyP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+        this.keyM = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+        this.keyN = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.N);
         
-        // Set up keyboard events
-        this.input.keyboard!.on('keydown-P', this.togglePause, this);
-        this.input.keyboard!.on('keydown-M', () => {
-            this.musicPlayer.playPause();
-            this.updateMusicDisplay();
-        });
-        this.input.keyboard!.on('keydown-N', () => {
-            this.musicPlayer.playNext();
-            this.updateMusicDisplay();
+        // Space bar to launch ball
+        this.input.keyboard.on('keydown-SPACE', () => {
+            this.launchBall();
         });
         
-        // Set up space key for ball launch
-        this.input.keyboard!.on('keydown-SPACE', this.launchBall, this);
-        
-        // Set up mouse input for paddle movement
-        this.input.on('pointermove', (pointer: Input.Pointer) => {
-            if (!this.state.isPaused && pointer.isDown) {
-                this.paddle.x = pointer.x;
+        // Touch/mouse input for mobile support
+        this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+            // Only move paddle if not paused
+            if (!this.state.isPaused) {
+                // Move paddle to pointer x position
+                this.paddle.x = Phaser.Math.Clamp(
+                    pointer.x,
+                    this.paddle.width / 2,
+                    this.sys.game.canvas.width - this.paddle.width / 2
+                );
+                
+                // Update paddle's fallback graphic if it exists
+                const paddleGraphic = this.paddle.getData('fallbackGraphic');
+                if (paddleGraphic) {
+                    paddleGraphic.x = this.paddle.x;
+                }
+                
+                // If ball is not launched yet, move it with the paddle
+                if (!this.state.ballLaunched) {
+                    this.ball.x = this.paddle.x;
+                    
+                    // Update ball's fallback graphic if it exists
+                    const ballGraphic = this.ball.getData('fallbackGraphic');
+                    if (ballGraphic) {
+                        ballGraphic.x = this.ball.x;
+                    }
+                }
             }
         });
         
-        // Set up mouse click for ball launch
-        this.input.on('pointerdown', this.launchBall, this);
+        // Tap/click to launch ball
+        this.input.on('pointerdown', () => {
+            if (!this.state.ballLaunched) {
+                this.launchBall();
+            }
+        });
+        
+        // Add mobile-friendly pause button
+        const pauseButton = this.add.rectangle(
+            this.sys.game.canvas.width - 40,
+            40,
+            50,
+            50,
+            0x333333,
+            0.7
+        );
+        pauseButton.setInteractive();
+        
+        const pauseIcon = this.add.text(
+            this.sys.game.canvas.width - 40,
+            40,
+            'II',
+            { fontSize: '24px', color: '#ffffff' }
+        ).setOrigin(0.5);
+        
+        pauseButton.on('pointerdown', () => {
+            this.togglePause();
+        });
     }
 
     private setupCollisions() {
+        // Skip collision setup if physics isn't available
+        if (!this.physics) {
+            console.warn('Physics not available, skipping collision setup');
+            return;
+        }
+
         // Ball and paddle collision
-        this.physics.add.collider(this.ball, this.paddle, this.handleBallPaddleCollision, undefined, this);
+        this.physics.add.collider(
+            this.ball, 
+            this.paddle, 
+            this.handleBallPaddleCollision, 
+            undefined, 
+            this
+        );
         
         // Mini balls and paddle collision
-        this.physics.add.collider(this.miniBalls, this.paddle, this.handleBallPaddleCollision, undefined, this);
+        this.physics.add.collider(
+            this.miniBalls, 
+            this.paddle, 
+            this.handleBallPaddleCollision, 
+            undefined, 
+            this
+        );
         
         // Ball and bricks collision
-        this.physics.add.collider(this.ball, this.brickGroup, this.handleBallBrickCollision, undefined, this);
+        this.physics.add.collider(
+            this.ball, 
+            this.brickGroup, 
+            this.handleBallBrickCollision, 
+            undefined, 
+            this
+        );
         
         // Mini balls and bricks collision
-        this.physics.add.collider(this.miniBalls, this.brickGroup, this.handleBallBrickCollision, undefined, this);
-        
-        // Paddle and power-ups collision
-        this.physics.add.overlap(this.paddle, this.powerUpGroup, this.handlePowerUpCollection, undefined, this);
+        this.physics.add.collider(
+            this.miniBalls, 
+            this.brickGroup, 
+            this.handleBallBrickCollision, 
+            undefined, 
+            this
+        );
         
         // Projectiles and bricks collision
-        this.physics.add.collider(this.projectileGroup, this.brickGroup, this.handleProjectileBrickCollision, undefined, this);
+        this.physics.add.collider(
+            this.projectileGroup, 
+            this.brickGroup, 
+            this.handleProjectileBrickCollision, 
+            undefined, 
+            this
+        );
+        
+        // Power-ups and paddle collision
+        this.physics.add.collider(
+            this.powerUpGroup,
+            this.paddle,
+            this.handlePowerUpCollection,
+            undefined,
+            this
+        );
+    }
+
+    private handleWorldBoundsCollision(body: Phaser.Physics.Arcade.Body, up: boolean, down: boolean) {
+        // Check if it's the ball and if it hit the bottom boundary
+        if (body.gameObject === this.ball && down) {
+            console.log("Ball hit bottom boundary");
+            this.handleBallLost();
+        }
     }
 
     private handleInput(time: number) {
@@ -698,15 +864,33 @@ export class Game extends Scene
         // Generate new level
         this.bricks = this.levelGenerator.generate();
         
-        // Add bricks to the group
+        // Reset brick count
+        this.state.bricksLeft = 0;
+        
+        // Add bricks to the group - with careful error handling
         this.bricks.forEach(brick => {
-            this.brickGroup.add(brick);
-            
-            // Skip indestructible bricks in count
-            if (!brick.isIndestructible()) {
-                this.state.bricksLeft++;
+            try {
+                // Make sure the brick is properly initialized before adding to physics group
+                if (brick && brick.body) {
+                    this.brickGroup.add(brick);
+                    
+                    // Skip indestructible bricks in count
+                    if (!brick.isIndestructible()) {
+                        this.state.bricksLeft++;
+                    }
+                } else {
+                    console.warn('Skipping brick with no physics body');
+                    // For bricks without physics bodies, still count them if they're not indestructible
+                    if (brick && !brick.isIndestructible()) {
+                        this.state.bricksLeft++;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to add brick to physics group:', error);
             }
         });
+        
+        console.log(`Level ${this.state.level} generated with ${this.state.bricksLeft} bricks to destroy`);
     }
 
     private onLevelComplete() {
@@ -793,12 +977,11 @@ export class Game extends Scene
             console.error('Failed to play gameover sound:', error);
         }
         
-        // Store the score to be displayed in the GameOver scene
-        this.data.set('finalScore', this.state.score);
-        this.data.set('highScore', Math.max(currentHighScore, this.state.score));
-        
-        // Go to game over scene
-        this.scene.start('GameOver');
+        // Pass the score data to the GameOver scene
+        this.scene.start('GameOver', {
+            finalScore: this.state.score,
+            highScore: Math.max(currentHighScore, this.state.score)
+        });
     }
 
     private togglePause() {

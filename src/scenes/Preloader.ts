@@ -429,4 +429,48 @@ export class Preloader extends Scene
             }
         }
     }
+
+    // Add this function to your Preloader scene
+    private handleLoadError() {
+        // Create a warning sign
+        const warningText = this.add.text(
+            this.sys.game.canvas.width / 2,
+            this.sys.game.canvas.height / 2 - 50,
+            'Some assets failed to load.\nThe game will continue with fallback assets.',
+            {
+                fontFamily: 'Arial',
+                fontSize: '18px',
+                color: '#ffff00',
+                align: 'center'
+            }
+        ).setOrigin(0.5);
+        
+        // Add a continue button
+        const continueButton = this.add.text(
+            this.sys.game.canvas.width / 2,
+            this.sys.game.canvas.height / 2 + 50,
+            'Continue',
+            {
+                fontFamily: 'Arial',
+                fontSize: '24px',
+                color: '#ffffff',
+                backgroundColor: '#4169e1',
+                padding: { x: 20, y: 10 }
+            }
+        ).setOrigin(0.5).setInteractive();
+        
+        // Hide the texts after a short time and continue
+        continueButton.on('pointerdown', () => {
+            warningText.setVisible(false);
+            continueButton.setVisible(false);
+            this.scene.start('MainMenu');
+        });
+        
+        // Or automatically continue after 3 seconds
+        this.time.delayedCall(3000, () => {
+            warningText.setVisible(false);
+            continueButton.setVisible(false);
+            this.scene.start('MainMenu');
+        });
+    }
 }

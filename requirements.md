@@ -291,24 +291,49 @@ music/
 
 ```
 sounds/
-  beep.wav       # Used for life lost
-  chime.wav      # Used for power-up collection
-  crunch.wav     # Used for brick breaking
-  gameover.wav   # Used for game over sequence
-  pew.wav        # Used for shooting power-up
-  ping.wav       # Used for ball bouncing
-  start.wav      # Used for level start
+  ao-laser.wav    # Used for shooting power-up
+  bang.wav        # Used for brick breaking (alternative)
+  bassdrum.wav    # Used for menu selection
+  boing.wav       # Used for ball bouncing
+  byeball.wav     # Used for life lost
+  effect.wav      # Used for power-up collection
+  effect2.wav     # Used for special event
+  fanfare.wav     # Used for level completion
+  glass.wav       # Used for brick breaking
+  gunfire.wav     # Used for shooting power-up (alternative)
+  humm.wav        # Used for ambient sound
+  orchblas.wav    # Used for special event
+  orchestr.wav    # Used for game over sequence
+  padexplo.wav    # Used for paddle explosion effect
+  peow!.wav       # Used for shooting power-up (alternative)
+  ricochet.wav    # Used for ball bouncing off walls
+  saucer.wav      # Used for UFO power-up
+  sweepdow.wav    # Used for power-down effect
+  swordswi.wav    # Used for special power-up
+  tank.wav        # Used for tank power-up
+  thudclap.wav    # Used for heavy impact
+  voltage.wav     # Used for electric power-up
+  whine.wav       # Used for special effect
+  wowpulse.wav    # Used for level start
+  xploshor.wav    # Used for large explosion
+  xplosht1.wav    # Used for small explosion
 ```
 
-| Sound Effect | Usage Context                          | Fallback Implementation |
-| ------------ | -------------------------------------- | ----------------------- |
-| beep.wav     | Played when player loses a life        | Silent operation        |
-| chime.wav    | Played when player collects a power-up | Silent operation        |
-| crunch.wav   | Played when a brick is destroyed       | Silent operation        |
-| gameover.wav | Played at game over screen             | Silent operation        |
-| pew.wav      | Played when shooting power-up fires    | Silent operation        |
-| ping.wav     | Played when ball bounces off surfaces  | Silent operation        |
-| start.wav    | Played when a level begins             | Silent operation        |
+| Sound Effect  | Usage Context                             | Fallback Implementation |
+| ------------- | ----------------------------------------- | ----------------------- |
+| boing.wav     | Played when ball bounces off paddle       | Silent operation        |
+| ricochet.wav  | Played when ball bounces off walls        | Silent operation        |
+| glass.wav     | Played when standard brick is destroyed   | Silent operation        |
+| bang.wav      | Played when tough brick is destroyed      | Silent operation        |
+| byeball.wav   | Played when player loses a life           | Silent operation        |
+| effect.wav    | Played when player collects a power-up    | Silent operation        |
+| orchestr.wav  | Played at game over screen                | Silent operation        |
+| ao-laser.wav  | Played when shooting power-up fires       | Silent operation        |
+| wowpulse.wav  | Played when a level begins                | Silent operation        |
+| fanfare.wav   | Played when level is completed             | Silent operation        |
+| xploshor.wav  | Played for large explosion effects          | Silent operation        |
+| sweepdow.wav  | Played for negative power-ups                | Silent operation        |
+| padexplo.wav  | Played when paddle is hit by enemy            | Silent operation        |
 
 **Critical Requirement:** The game MUST function normally without sound effects if files are missing.
 

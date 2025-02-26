@@ -69,46 +69,54 @@ export class Brick extends Physics.Arcade.Sprite {
     }
     
     private setupVisuals(): void {
+        // Try to load the appropriate texture first
         try {
-            // Set brick texture based on type
+            // Get the texture key based on type and health
             const textureKey = getBrickTextureKey(this.brickType);
             
             if (this.scene.textures.exists(textureKey)) {
+                // Texture exists, set it
                 this.setTexture(textureKey);
+                this.body.updateFromGameObject(); // Make sure physics body updates with the new texture
             } else {
                 throw new Error(`Texture ${textureKey} not found`);
             }
         } catch (error) {
             console.error('Failed to set brick texture:', error);
             
-            // Create fallback visuals based on type
+            // Create fallback visuals with colors based on type
             let fillColor: number;
+            let strokeColor: number = 0xFFFFFF;
             
             switch (this.brickType) {
                 case BrickType.Standard:
-                    fillColor = 0xcccccc;
+                    fillColor = 0x3366FF;
                     break;
                 case BrickType.Tough:
-                    fillColor = 0xff0000;
+                    fillColor = 0xFF6600;
                     break;
                 case BrickType.Indestructible:
-                    fillColor = 0x444444;
+                    fillColor = 0x999999;
                     break;
                 default:
-                    fillColor = 0xcccccc;
+                    fillColor = 0x00FF00;
             }
             
-            // Replace sprite with a rectangle graphic
-            const width = this.displayWidth || 64;
-            const height = this.displayHeight || 32;
+            // Apply tint to represent the brick type instead of using missing texture
+            this.setTexture('__DEFAULT');
+            this.setTint(fillColor);
             
-            // Create a graphic to represent the brick
-            const graphics = this.scene.add.rectangle(this.x, this.y, width, height, fillColor);
-            graphics.setStrokeStyle(2, 0xffffff);
+            // Draw a border rectangle as an additional visual cue
+            const graphics = this.scene.add.graphics();
+            graphics.lineStyle(2, strokeColor);
+            graphics.strokeRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
             
-            // Save reference to the graphic
-            this.setData('fallbackGraphic', graphics);
+            // Store the graphics reference so we can update it when the brick moves
+            this.setData('fallbackGraphics', graphics);
         }
+        
+        // Update appearance based on health for multi-hit bricks
+        this.updateDamageAppearance();
     }
     
     hit(): number {
@@ -184,19 +192,31 @@ export class Brick extends Physics.Arcade.Sprite {
         }
     }
     
-    destroy(): void {
-        // Clean up any fallback graphics
-        const fallbackGraphic = this.getData('fallbackGraphic') as GameObjects.Rectangle;
-        if (fallbackGraphic) {
-            fallbackGraphic.destroy();
+    destroy(fromScene?: boolean): this {
+        // Clean up fallback graphics if they exist
+        const graphics = this.getData('fallbackGraphics');
+        if (graphics) {
+            graphics.destroy();
         }
         
-        // Call parent destroy
-        super.destroy();
+        return super.destroy(fromScene);
     }
     
     isIndestructible(): boolean {
         return this.brickType === BrickType.Indestructible;
+    }
+    
+    // Add this method to update the position of fallback graphics if the brick moves
+    preUpdate(time: number, delta: number): void {
+        super.preUpdate(time, delta);
+        
+        // Update position of fallback graphics if they exist
+        const graphics = this.getData('fallbackGraphics');
+        if (graphics) {
+            graphics.clear();
+            graphics.lineStyle(2, 0xFFFFFF);
+            graphics.strokeRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
+        }
     }
 }
 

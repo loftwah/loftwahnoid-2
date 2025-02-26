@@ -35,9 +35,9 @@ export class MusicPlayer {
         }
         
         // Check if music was playing in a previous session
+        // But don't auto-start it - user must explicitly start it
         const wasPlaying = localStorage.getItem('loftwahnoid_music_playing');
-        this.isPlaying = wasPlaying === 'true';
-        console.log(`MusicPlayer: Music should be playing: ${this.isPlaying}`);
+        console.log(`MusicPlayer: Music was playing in previous session: ${wasPlaying === 'true'}`);
         
         // Initialize the current track
         this.initCurrentTrack();
@@ -46,28 +46,22 @@ export class MusicPlayer {
     private initCurrentTrack(): void {
         console.log('MusicPlayer: Initializing current track');
         
-        // Stop current music if any
+        // Stop existing music
         if (this.music) {
-            console.log('MusicPlayer: Stopping previous track');
             this.music.stop();
             this.music = null;
         }
         
-        // Handle track index safely (in case saved value is invalid)
-        if (this.currentTrackIndex >= this.tracks.length) {
-            console.log(`MusicPlayer: Invalid track index (${this.currentTrackIndex}), resetting to 0`);
-            this.currentTrackIndex = 0;
-        }
-        
-        // Get the current track
+        // Get the currently selected track
         const track = this.tracks[this.currentTrackIndex];
-        console.log(`MusicPlayer: Selected track: ${track.name} (${track.key})`);
         
-        // Check if this track is already known to be unavailable
+        // If the track is unavailable, mark it and exit
         if (this.unavailableTracks.has(track.key)) {
-            console.log(`MusicPlayer: Track ${track.name} is unavailable, not attempting to load`);
+            console.log(`MusicPlayer: Track ${track.name} has previously failed to load, skipping`);
             return;
         }
+        
+        console.log(`MusicPlayer: Selected track: ${track.name} (${track.key})`);
         
         try {
             console.log(`MusicPlayer: Attempting to add sound: ${track.key}`);
@@ -88,10 +82,27 @@ export class MusicPlayer {
                 });
             }
             
+            // Catch encoding errors that might occur during playback
+            this.music.once('loaderror', () => {
+                console.error(`MusicPlayer: Error loading audio data for ${track.key}`);
+                this.unavailableTracks.add(track.key);
+                this.music = null;
+                // Try the next track
+                this.playNext();
+            });
+            
             // Start playing if needed
             if (this.isPlaying) {
                 console.log('MusicPlayer: Starting playback');
-                this.music.play();
+                try {
+                    this.music.play();
+                } catch (e) {
+                    console.error(`MusicPlayer: Error playing track ${track.key}:`, e);
+                    this.unavailableTracks.add(track.key);
+                    this.music = null;
+                    // Try the next track
+                    this.playNext();
+                }
             } else {
                 console.log('MusicPlayer: Track loaded but not playing (autoplay disabled)');
             }
